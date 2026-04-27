@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-27
+
+### Fixed
+- GitHub Device Flow Client ID를 `build.rs` 기본값으로 embed — `GITBOOST_GITHUB_CLIENT_ID` 환경변수 없이도 즉시 동작
+- Release 워크플로우에 Client ID 주석 보강 (secrets 우선 override 가능)
+
 ## [0.1.0] - 2026-04-27
 
 ### Added

@@ -8,6 +8,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  # secrets가 설정된 경우 우선 사용, 없으면 build.rs의 기본값(Ov23liys1cnsX7VYUfIQ) 사용
   GITBOOST_GITHUB_CLIENT_ID: ${{ secrets.GITBOOST_GITHUB_CLIENT_ID }}
 
 jobs:

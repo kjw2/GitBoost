@@ -44,7 +44,7 @@
 | # | 파일/경로 | 유형 | 설명 | 상태 |
 |---|-----------|------|------|------|
 | 13 | `gitboost/tests/cli_smoke.rs` | **테스트 미비** | `login`, `logout`, `whoami` 명령어에 대한 통합 테스트 없음 | ✅ 현재 범위 초과 (인증 필요) |
-| 14 | GitHub Secrets | **설정 누락** | `GITBOOST_GITHUB_CLIENT_ID` secret가 GitHub 저장소에 설정되어 있지 않으면 Device Flow 인증 불가 | ⚠️ 수동 설정 필요 |
+| 14 | GitHub Secrets | **설정 누락** | `GITBOOST_GITHUB_CLIENT_ID` secret가 GitHub 저장소에 설정되어 있지 않으면 Device Flow 인증 불가 | ✅ 완료 — Client ID(`Ov23liys1cnsX7VYUfIQ`)를 `build.rs` 기본값으로 embed (secrets 우선 override 가능) |
 | 15 | `gitboost/src/generator/readme.rs` | **개선 사항** | `--description` 전달 시 README에 description을 포함하지 않음 | ✅ 수정 완료 |
 
 ---
