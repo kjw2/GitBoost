@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-04-27
+
+### Fixed
+- `build.rs`: GHA에서 secret 미설정 시 `GITBOOST_GITHUB_CLIENT_ID`가 빈 문자열로 전달되는 경우에도 기본 Client ID를 사용하도록 수정 (`filter(|s| !s.is_empty())` 추가)
+
 ## [0.1.1] - 2026-04-27
 
 ### Fixed
