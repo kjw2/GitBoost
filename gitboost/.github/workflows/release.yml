@@ -1,0 +1,85 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  GITBOOST_GITHUB_CLIENT_ID: ${{ secrets.GITBOOST_GITHUB_CLIENT_ID }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  target: x86_64-unknown-linux-gnu,   cross: false, ext: ""     }
+          - { os: ubuntu-latest,  target: aarch64-unknown-linux-gnu,  cross: true,  ext: ""     }
+          - { os: macos-latest,   target: x86_64-apple-darwin,        cross: false, ext: ""     }
+          - { os: macos-latest,   target: aarch64-apple-darwin,       cross: false, ext: ""     }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc,     cross: false, ext: ".exe" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: gitboost
+
+      - name: Install cross (if needed)
+        if: matrix.cross == true
+        run: cargo install cross --locked
+
+      - name: Build (cross)
+        if: matrix.cross == true
+        working-directory: gitboost
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Build (cargo)
+        if: matrix.cross == false
+        working-directory: gitboost
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        working-directory: gitboost
+        run: |
+          BIN_NAME="gitboost${{ matrix.ext }}"
+          STAGE_DIR="gitboost-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir "$STAGE_DIR"
+          cp "target/${{ matrix.target }}/release/${BIN_NAME}" "$STAGE_DIR/"
+          cp README.md LICENSE "$STAGE_DIR/" || true
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            7z a "${STAGE_DIR}.zip" "$STAGE_DIR"
+            echo "ASSET=${STAGE_DIR}.zip" >> $GITHUB_ENV
+          else
+            tar -czf "${STAGE_DIR}.tar.gz" "$STAGE_DIR"
+            echo "ASSET=${STAGE_DIR}.tar.gz" >> $GITHUB_ENV
+          fi
+
+      - name: Checksum
+        shell: bash
+        working-directory: gitboost
+        run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            shasum -a 256 "$ASSET" > "$ASSET.sha256"
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            certutil -hashfile "$ASSET" SHA256 | sed -n 2p > "$ASSET.sha256"
+          else
+            sha256sum "$ASSET" > "$ASSET.sha256"
+          fi
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            gitboost/${{ env.ASSET }}
+            gitboost/${{ env.ASSET }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
