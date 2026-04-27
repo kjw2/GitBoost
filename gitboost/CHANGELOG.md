@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-04-26
+## [0.1.0] - 2026-04-27
 
 ### Added
 - `create` command: 로컬 디렉토리 생성, Git 초기화, README/LICENSE/.gitignore 작성, GitHub 원격 저장소 생성, remote 등록 + 첫 push 자동화

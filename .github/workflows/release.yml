@@ -54,7 +54,8 @@ jobs:
           STAGE_DIR="gitboost-${GITHUB_REF_NAME}-${{ matrix.target }}"
           mkdir "$STAGE_DIR"
           cp "target/${{ matrix.target }}/release/${BIN_NAME}" "$STAGE_DIR/"
-          cp README.md LICENSE "$STAGE_DIR/" || true
+          cp ../README.md "$STAGE_DIR/README.md" || true
+          cp LICENSE "$STAGE_DIR/" || true
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             7z a "${STAGE_DIR}.zip" "$STAGE_DIR"
             echo "ASSET=${STAGE_DIR}.zip" >> $GITHUB_ENV

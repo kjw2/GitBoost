@@ -100,6 +100,7 @@ pub async fn run_create(args: CreateArgs) -> Result<()> {
         project_name: &args.name,
         license_id: &args.license,
         author: &author,
+        description: args.description.as_deref(),
         template: args.template.as_deref(),
         dir: &project_dir,
         github_client: Some(&gh_client),

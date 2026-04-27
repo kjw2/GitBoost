@@ -1,4 +1,3 @@
-use crate::error::Result;
 use crate::github::GithubClient;
 
 /// 사용자 입력값을 GitHub API gitignore 템플릿 이름으로 정규화합니다.
@@ -46,12 +45,6 @@ pub async fn fetch(client: &GithubClient, template: &str) -> Option<String> {
             None
         }
     }
-}
-
-/// .gitignore 템플릿 이름 정규화가 GitHub API 형식과 일치하는지 확인합니다.
-pub fn validate_template_name(_name: &str) -> Result<()> {
-    // 현재 모든 입력값을 허용하고 실제 API 호출 시 검증
-    Ok(())
 }
 
 #[cfg(test)]

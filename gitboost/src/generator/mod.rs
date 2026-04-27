@@ -11,6 +11,7 @@ pub struct WriteFilesArgs<'a> {
     pub project_name: &'a str,
     pub license_id: &'a str,
     pub author: &'a str,
+    pub description: Option<&'a str>,
     pub template: Option<&'a str>,
     pub dir: &'a Path,
     pub github_client: Option<&'a GithubClient>,
@@ -27,7 +28,7 @@ pub async fn write_files(args: WriteFilesArgs<'_>) -> Result<()> {
     if readme_path.exists() {
         crate::ui::warn("README.md가 이미 존재합니다. 덮어쓰지 않습니다.");
     } else {
-        let content = readme::generate(args.project_name);
+        let content = readme::generate(args.project_name, args.description, args.license_id);
         std::fs::write(&readme_path, content)
             .map_err(|e| GitBoostError::Fs(format!("README.md 작성 실패: {}", e)))?;
     }
