@@ -29,30 +29,44 @@ pub struct TokenSource {
 pub async fn resolve_token(client: &reqwest::Client) -> Result<TokenSource> {
     // Level 1: gh CLI
     if let Some(token) = gh_cli::get_token().await {
-        if verify_token(client, &token).await {
-            tracing::debug!("인증 성공: gh CLI 위임");
-            return Ok(TokenSource {
-                token,
-                origin: Origin::GhCli,
-            });
+        match verify_token(client, &token).await {
+            TokenValidity::Valid | TokenValidity::NetworkError => {
+                tracing::debug!("인증 성공: gh CLI 위임");
+                return Ok(TokenSource {
+                    token,
+                    origin: Origin::GhCli,
+                });
+            }
+            TokenValidity::Invalid => {
+                tracing::debug!("gh CLI 토큰 401, 다음 단계로 진행");
+            }
         }
-        tracing::debug!("gh CLI 토큰 검증 실패, 다음 단계로 진행");
     }
 
     // Level 2: keyring
     match keyring_storage::load() {
-        Ok(Some(token)) => {
-            if verify_token(client, &token).await {
+        Ok(Some(token)) => match verify_token(client, &token).await {
+            TokenValidity::Valid => {
                 tracing::debug!("인증 성공: keyring");
                 return Ok(TokenSource {
                     token,
                     origin: Origin::Keyring,
                 });
             }
-            // 만료된 토큰 keyring에서 삭제
-            tracing::debug!("keyring 토큰 검증 실패, 삭제 후 다음 단계로 진행");
-            let _ = keyring_storage::delete();
-        }
+            TokenValidity::Invalid => {
+                // 401 Unauthorized — 만료/해지된 토큰이므로 keyring에서 삭제
+                tracing::debug!("keyring 토큰 401 → 삭제 후 다음 단계로 진행");
+                let _ = keyring_storage::delete();
+            }
+            TokenValidity::NetworkError => {
+                // 네트워크 오류 시 토큰을 삭제하지 않음 — 오프라인 환경 보호
+                tracing::debug!("keyring 토큰 검증 중 네트워크 오류, 토큰 유지");
+                return Ok(TokenSource {
+                    token,
+                    origin: Origin::Keyring,
+                });
+            }
+        },
         Ok(None) => tracing::debug!("keyring에 토큰 없음"),
         Err(e) => tracing::debug!("keyring 로드 실패: {}", e),
     }
@@ -67,8 +81,20 @@ pub async fn resolve_token(client: &reqwest::Client) -> Result<TokenSource> {
     })
 }
 
+/// 토큰 검증 결과
+enum TokenValidity {
+    /// 200 OK — 토큰 유효
+    Valid,
+    /// 401 Unauthorized — 만료 또는 해지된 토큰
+    Invalid,
+    /// 네트워크 오류 또는 기타 HTTP 오류 — 토큰 상태 불명확
+    NetworkError,
+}
+
 /// GitHub API /user 엔드포인트로 토큰 유효성을 검증합니다.
-async fn verify_token(client: &reqwest::Client, token: &str) -> bool {
+///
+/// 401이면 `Invalid`, 네트워크 오류/기타 코드는 `NetworkError`를 반환합니다.
+async fn verify_token(client: &reqwest::Client, token: &str) -> TokenValidity {
     let api_base = crate::config::github_api_base();
     let url = format!("{}/user", api_base);
     match client
@@ -80,7 +106,8 @@ async fn verify_token(client: &reqwest::Client, token: &str) -> bool {
         .send()
         .await
     {
-        Ok(resp) => resp.status().is_success(),
-        Err(_) => false,
+        Ok(resp) if resp.status().is_success() => TokenValidity::Valid,
+        Ok(resp) if resp.status() == reqwest::StatusCode::UNAUTHORIZED => TokenValidity::Invalid,
+        Ok(_) | Err(_) => TokenValidity::NetworkError,
     }
 }

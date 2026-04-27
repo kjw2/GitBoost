@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-27
+
+### Fixed
+- **push 실패 (Windows)**: `.bat` credential helper가 git 내부 bash에서 경로 파싱 오류 발생하는 문제 수정  
+  → `git remote set-url`로 `x-access-token:{token}@` 임시 주입 방식으로 교체 (Unix/Windows 공통)
+- **이중 로그인**: `verify_token` 네트워크 오류 시 keyring 토큰을 삭제하여 불필요한 재인증 유도하던 문제 수정  
+  → 401 Unauthorized 응답일 때만 토큰 삭제, 네트워크 오류 시 기존 토큰 유지
+
 ## [0.1.2] - 2026-04-27
 
 ### Fixed
