@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-04-27
+
+### Fixed
+- **명령어마다 재인증 요구**: `resolve_token`이 매 호출마다 GitHub API로 토큰을 검증하첰고, 검증 실패 시 keyring을 삭제해 Device Flow를 반복 요구하던 문제 시정  
+  → `resolve_token`에서 네트워크 검증 완전 제거. keyring/gh-CLI 토큰을 네트워크 호출 없이 즐시 사용
+- **유효하지 않은 토큰 처리**: GitHub API가 401을 반환하면 keyring을 자동 정리하고 `gitboost login` 안내 메시지 표시
+
 ## [0.1.3] - 2026-04-27
 
 ### Fixed

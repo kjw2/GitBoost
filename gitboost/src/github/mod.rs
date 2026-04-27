@@ -54,6 +54,7 @@ impl GithubClient {
     }
 
     /// GitHub API 응답을 처리합니다. 4xx/5xx는 GitHubError로 변환합니다.
+    /// 401 Unauthorized 수신 시 keyring 토큰을 삭제하고 Auth 에러를 반환합니다.
     pub(crate) async fn handle_response<T: serde::de::DeserializeOwned>(
         resp: reqwest::Response,
     ) -> Result<T> {
@@ -62,6 +63,14 @@ impl GithubClient {
             resp.json::<T>()
                 .await
                 .map_err(|e| GitBoostError::Network(format!("응답 파싱 실패: {}", e)))
+        } else if status == reqwest::StatusCode::UNAUTHORIZED {
+            // 토큰 만료/해지 — keyring 정리 후 재로그인 안내
+            let _ = crate::auth::keyring_storage::delete();
+            Err(GitBoostError::Auth(
+                "GitHub 토큰이 만료되었거나 해지되었습니다.\n  \
+                 `gitboost login`을 실행하여 다시 인증하세요."
+                    .to_string(),
+            ))
         } else {
             let status_code = status.as_u16();
             let message = resp
@@ -77,10 +86,18 @@ impl GithubClient {
     }
 
     /// GitHub API 응답에서 body를 버립니다 (204 No Content 등).
+    /// 401 Unauthorized 수신 시 keyring 토큰을 삭제하고 Auth 에러를 반환합니다.
     pub(crate) async fn handle_empty_response(resp: reqwest::Response) -> Result<()> {
         let status = resp.status();
         if status.is_success() {
             Ok(())
+        } else if status == reqwest::StatusCode::UNAUTHORIZED {
+            let _ = crate::auth::keyring_storage::delete();
+            Err(GitBoostError::Auth(
+                "GitHub 토큰이 만료되었거나 해지되었습니다.\n  \
+                 `gitboost login`을 실행하여 다시 인증하세요."
+                    .to_string(),
+            ))
         } else {
             let status_code = status.as_u16();
             let message = resp
